@@ -23,7 +23,16 @@ namespace GitLabApiClient.Internal.Http
 
         private GitLabHttpFacade(string hostUrl, RequestsJsonSerializer jsonSerializer)
         {
-            _httpClient = new HttpClient { BaseAddress = new Uri(hostUrl) };
+            var handler = new HttpClientHandler
+            {
+                ClientCertificateOptions = ClientCertificateOption.Manual,
+                ServerCertificateCustomValidationCallback =
+                (httpRequestMessage, cert, cetChain, policyErrors) =>
+                {
+                    return true;
+                }
+            };
+            _httpClient = new HttpClient(handler) { BaseAddress = new Uri(hostUrl) };
 
             Setup(jsonSerializer);
         }
@@ -56,6 +65,8 @@ namespace GitLabApiClient.Internal.Http
         {
             // allow tls 1.1 and 1.2
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls11 | SecurityProtocolType.Tls12;
+            ServicePointManager.ServerCertificateValidationCallback +=
+    (sender, cert, chain, sslPolicyErrors) => true;
             // ReSharper disable once InconsistentlySynchronizedField
             _requestor = new GitLabApiRequestor(_httpClient, jsonSerializer);
             _pagedRequestor = new GitLabApiPagedRequestor(_requestor);
