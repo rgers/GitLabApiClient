@@ -34,6 +34,8 @@ namespace GitLabApiClient.Models.Commits.Responses
         public List<string> ParentIds { get; } = new List<string>();
         [JsonProperty("stats")]
         public CommitStats Stats { get; set; }
+        [JsonProperty("web_url")]
+        public string WebUrl { get; set; }
     }
 
     public sealed class CommitStats

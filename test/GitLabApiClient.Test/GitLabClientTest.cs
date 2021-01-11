@@ -50,6 +50,7 @@ namespace GitLabApiClient.Test
             sut.Users.Should().BeAssignableTo(typeof(UsersClient));
             sut.Webhooks.Should().BeAssignableTo(typeof(WebhookClient));
             sut.MergeRequests.Should().BeAssignableTo(typeof(MergeRequestsClient));
+            sut.ToDoList.Should().BeAssignableTo(typeof(ToDoListClient));
         }
 
         [Trait("Category", "LinuxIntegration")]
@@ -65,7 +66,7 @@ namespace GitLabApiClient.Test
                 accessTokenResponse.CreatedAt.Should().NotBeNull();
                 accessTokenResponse.AccessToken.Should().HaveLength(64);
                 accessTokenResponse.RefreshToken.Should().HaveLength(64);
-                accessTokenResponse.TokenType.Should().Be("bearer");
+                accessTokenResponse.TokenType.Should().BeEquivalentTo("bearer");
                 var currentSessionAsync = await sut.Users.GetCurrentSessionAsync();
                 currentSessionAsync.Username.Should().Be(GitLabApiHelper.TestUserName);
 

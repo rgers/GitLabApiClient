@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -9,6 +11,7 @@ using GitLabApiClient.Models.Milestones.Requests;
 using GitLabApiClient.Models.Milestones.Responses;
 using GitLabApiClient.Models.Projects.Requests;
 using GitLabApiClient.Models.Projects.Responses;
+using GitLabApiClient.Models.Runners.Responses;
 using GitLabApiClient.Models.Variables.Request;
 using GitLabApiClient.Models.Variables.Response;
 using GitLabApiClient.Test.Utilities;
@@ -115,6 +118,17 @@ namespace GitLabApiClient.Test
                 v.EnvironmentScope == createdVariable.EnvironmentScope &&
                 v.Masked == createdVariable.Masked &&
                 v.Protected == createdVariable.Protected);
+        }
+
+        [Fact]
+        public async Task ProjectRunnerCanBeRetrieved()
+        {
+            //act
+            var runners = await _sut.GetRunnersAsync(GitLabApiHelper.TestProjectId);
+
+            //assert
+            runners.Count.Should().BeGreaterOrEqualTo(1);
+            runners.Should().Contain(r => r.Description == GitLabApiHelper.TestProjectRunnerName && r.Active == true);
         }
 
         [Fact]
@@ -347,6 +361,48 @@ namespace GitLabApiClient.Test
 
             //assert
             updatedMilestone.Should().Match<Milestone>(i => i.State == MilestoneState.Closed);
+        }
+
+        [Fact]
+        public async Task ExportImportProject()
+        {
+            var status = await _sut.GetExportStatusAsync(GitLabApiHelper.TestProjectId);
+            status.Status.Should().Be(ExportStatusEnum.None);
+
+            await _sut.ExportAsync(GitLabApiHelper.TestProjectId);
+
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            while (status.Status == ExportStatusEnum.None)
+            {
+                stopwatch.Elapsed.TotalMilliseconds.Should().BeLessThan(new TimeSpan(0, 1, 0).TotalMilliseconds);
+
+                await Task.Delay(5000);
+                status = await _sut.GetExportStatusAsync(GitLabApiHelper.TestProjectId);
+            }
+            while (status.Status != ExportStatusEnum.None && status.Status != ExportStatusEnum.Finished)
+            {
+                await Task.Delay(5000);
+                status = await _sut.GetExportStatusAsync(GitLabApiHelper.TestProjectId);
+            }
+
+            status.Status.Should().Be(ExportStatusEnum.Finished);
+
+            var path = System.IO.Path.GetTempFileName();
+            await _sut.ExportDownloadAsync(GitLabApiHelper.TestProjectId, path);
+
+            System.IO.File.Exists(path).Should().BeTrue();
+            var projectFileInfo = new System.IO.FileInfo(path);
+            projectFileInfo.Length.Should().BeGreaterThan(0);
+
+            var req = ImportProjectRequest.FromFile("project_import_test", path);
+            var importProject = await _sut.ImportAsync(req);
+            importProject.Path.Should().Be("project_import_test");
+
+            var importStatus = await _sut.GetImportStatusAsync(importProject.Id);
+            importStatus.Status.Should().NotBe(ImportStatusEnum.None);
+
+            System.IO.File.Delete(path);
         }
 
         public Task InitializeAsync() => CleanupProjects();

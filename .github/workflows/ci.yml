@@ -1,6 +1,14 @@
 name: DotNet
 
-on: [push, pull_request]
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  release:
+    types: [published]
 
 jobs:
   test:
@@ -9,25 +17,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Fetch all history for all tags and branches
-        run: git fetch --prune --unshallow
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v2
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: '2.1.803'
-      - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: '3.1.101'
-
-      # workaround for using multiple dotnet core installs https://github.com/actions/setup-dotnet/issues/25
-      - name: .net SxS
-        run: rsync -a ${DOTNET_ROOT/3.1.101/2.1.803}/* $DOTNET_ROOT/
-
-      # workaround for dotnet tools not being on path https://github.com/actions/virtual-environments/issues/213
-      - name: add .dotnet/tools to path
-        run: echo "::set-env name=PATH::${PATH}:${HOME}/.dotnet/tools"
+          dotnet-version: '3.1'
 
       - run: dotnet tool install -g Codecov.Tool
 
@@ -41,3 +44,13 @@ jobs:
 
       - run: ./test.ps1
         shell: pwsh
+
+      - name: Push NuGet
+        if: |
+          startsWith(github.event.ref, 'refs/tags/')
+          || endsWith(github.event.ref, '/master')
+        shell: pwsh
+        run: dotnet nuget push **/*.nupkg --source $Env:SOURCE --api-key $Env:TOKEN
+        env:
+          SOURCE: 'https://api.nuget.org/v3/index.json'
+          TOKEN: ${{ secrets.NUGET_API_KEY }}

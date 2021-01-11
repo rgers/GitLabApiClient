@@ -11,6 +11,7 @@
     <RepositoryUrl>https://github.com/nmklotas/GitLabApiClient</RepositoryUrl>
     <PackageTags>GitLab REST API CI Client</PackageTags>
     <PackageId>GitLabApiClient</PackageId>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Company>nmklotas</Company>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <IncludeSymbols>true</IncludeSymbols>
@@ -18,8 +19,13 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(GITHUB_ACTIONS)' == 'true'">
+    <ContinuousIntegrationBuild >true</ContinuousIntegrationBuild>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
   <ItemGroup>
-    <PackageReference Include="GitVersionTask" Version="5.1.3" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="All" Version="1.0.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>

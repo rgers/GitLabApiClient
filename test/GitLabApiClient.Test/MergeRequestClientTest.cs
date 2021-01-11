@@ -17,7 +17,8 @@ namespace GitLabApiClient.Test
     public class MergeRequestClientTest : IAsyncLifetime
     {
         private readonly MergeRequestsClient _sut = new MergeRequestsClient(
-            GitLabApiHelper.GetFacade(), new MergeRequestsQueryBuilder(), new ProjectMergeRequestsQueryBuilder());
+            GitLabApiHelper.GetFacade(), new MergeRequestsQueryBuilder(), new ProjectMergeRequestsQueryBuilder(),
+            new ProjectMergeRequestsNotesQueryBuilder());
 
         [Fact]
         public async Task CreatedMergeRequestCanBeRetrieved()
@@ -40,6 +41,7 @@ namespace GitLabApiClient.Test
             {
                 return m =>
                     m.Assignee.Id == 1 &&
+                    m.MergedBy == null &&
                     m.ForceRemoveSourceBranch == true &&
                     m.Title == "Title" &&
                     m.Description == "Description" &&
